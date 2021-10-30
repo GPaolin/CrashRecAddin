@@ -1,0 +1,13 @@
+C:\Users\PaolinG\source\repos\CrashRecAddIn\CrashRecAddIn\obj\Debug\CrashRecAddIn.csproj.AssemblyReference.cache
+C:\Users\PaolinG\source\repos\CrashRecAddIn\CrashRecAddIn\obj\Debug\CrashRecAddIn.csproj.CoreCompileInputs.cache
+C:\Users\PaolinG\source\repos\CrashRecAddIn\CrashRecAddIn\bin\Debug\CrashRecAddIn.dll
+C:\Users\PaolinG\source\repos\CrashRecAddIn\CrashRecAddIn\bin\Debug\CrashRecAddIn.pdb
+C:\Users\PaolinG\source\repos\CrashRecAddIn\CrashRecAddIn\bin\Debug\CrashRecAddIn.scadaAddIn
+C:\Users\PaolinG\source\repos\CrashRecAddIn\CrashRecAddIn\bin\Debug\Mono.Addins.dll
+C:\Users\PaolinG\source\repos\CrashRecAddIn\CrashRecAddIn\bin\Debug\Scada.AddIn.Contracts.dll
+C:\Users\PaolinG\source\repos\CrashRecAddIn\CrashRecAddIn\bin\Debug\ZenonAddInStdLib.dll
+C:\Users\PaolinG\source\repos\CrashRecAddIn\CrashRecAddIn\bin\Debug\Scada.AddIn.Contracts.xml
+C:\Users\PaolinG\source\repos\CrashRecAddIn\CrashRecAddIn\bin\Debug\ZenonAddInStdLib.pdb
+C:\Users\PaolinG\source\repos\CrashRecAddIn\CrashRecAddIn\obj\Debug\CrashRecAddIn.csproj.CopyComplete
+C:\Users\PaolinG\source\repos\CrashRecAddIn\CrashRecAddIn\obj\Debug\CrashRecAddIn.dll
+C:\Users\PaolinG\source\repos\CrashRecAddIn\CrashRecAddIn\obj\Debug\CrashRecAddIn.pdb
