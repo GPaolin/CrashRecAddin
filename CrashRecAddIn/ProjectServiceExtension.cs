@@ -33,16 +33,6 @@ namespace CrashRecAddIn
         public const string AddInVersion = "1.0.0";
         public const string cLogFile = "CrashRecAddIn_LOG.txt";
 
-        private OcValueContainer alarmTriggerVarContainer;
-        private string alarmTriggerVarContainerName = "AlarmTriggerVarContainer";
-
-        OcTriggerContainer ocTriggerContainer;
-        private string alarmContainerName = "AlarmContainer";
-
-        private string _pathConfigFile = "CrashRecConfig.txt";
-        private string _pathBaslerCommander = @"C:\Romaco\Prog\Program\BaslerCommander\BaslerCommander.exe";
-        private string AlarmCodeTriggerVar = "bINT_CrashRecorder_AlarmTriggerCode";
-
         public bool _CycleMonitorEnable = true;
         public bool _CrashRecordinEnable = true;
         private string actualTrigger = "";
@@ -50,6 +40,18 @@ namespace CrashRecAddIn
         public string folderRepos = @"C:\Romaco\Prog\Data\CrashRecorder";
         //public string waitForVideo = "waitForVideo.txt";
         public string triggerFile = "triggerFile.txt";
+
+        private OcValueContainer alarmTriggerVarContainer;
+        private string alarmTriggerVarContainerName = "AlarmTriggerVarContainer";
+
+        private int _filterTriggerMilliSeconds = 1000;
+
+        OcTriggerContainer ocTriggerContainer;
+        private string alarmContainerName = "AlarmContainer";
+
+        private string _pathConfigFile = "CrashRecConfig.txt";
+        private string _pathBaslerCommander = @"C:\Romaco\Prog\Program\BaslerCommander\BaslerCommander.exe";
+        private string AlarmCodeTriggerVar = "bINT_CrashRecorder_AlarmTriggerCode";
 
         public void Start(IProject context, IBehavior behavior)
         {
@@ -155,13 +157,15 @@ namespace CrashRecAddIn
                 ocTriggerContainer.VarList = alarms;
                 ocTriggerContainer.TriggerFunc = (() => 
                 {
-                    Logger.AddLog("TRIGGERED!", ProjectServiceExtension.cLogFile);
+                    Logger.AddLog("Alarm trigger received", ProjectServiceExtension.cLogFile);
                     if (_CrashRecordinEnable)
                     {
-                        Logger.AddLog("alarm trigger received", ProjectServiceExtension.cLogFile);
                         string triggerFilePath = Path.Combine(folderRepos, triggerFile);
                         if (!File.Exists(triggerFilePath))
+                        { 
                             File.Create(triggerFilePath);
+                            Logger.AddLog("TRIGGERED!", ProjectServiceExtension.cLogFile);
+                        }
                         else
                             Logger.AddLog("trigger File already present", ProjectServiceExtension.cLogFile);
                     }
@@ -175,7 +179,10 @@ namespace CrashRecAddIn
             }
         }
 
-
+        private void FilterTrigger()
+        {
+            System.Threading.Thread.Sleep(_filterTriggerMilliSeconds);
+        }
 
         #endregion
     }

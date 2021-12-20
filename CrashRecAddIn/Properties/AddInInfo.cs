@@ -7,4 +7,4 @@
 [assembly: AddinDependency("::scada", "1.0")]
 
 [assembly: AddinName("CrashRecAddIn")]
-[assembly: AddinDescription("")]
+[assembly: AddinDescription("Crash Recorder Trigger Manager")]
