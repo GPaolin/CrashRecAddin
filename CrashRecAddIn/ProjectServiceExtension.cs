@@ -7,6 +7,9 @@
  *  
  *  Version 1.0.0 - 25 / Oct / 2021
  *  
+ *  Version 1.0.1 - 20 / Dic / 2022
+ *  Recompiled with ZenAddInStdLib updated
+ *  
  */
 
 using Scada.AddIn.Contracts;
@@ -30,7 +33,7 @@ namespace CrashRecAddIn
         #region IProjectServiceExtension implementation
         IProject _Zenon;
         
-        public const string AddInVersion = "1.0.0";
+        public const string AddInVersion = "1.0.1";
         public const string cLogFile = "CrashRecAddIn_LOG.txt";
 
         public bool _CycleMonitorEnable = true;
