@@ -7,8 +7,17 @@
  *  
  *  Version 1.0.0 - 25 / Oct / 2021
  *  
- *  Version 1.0.1 - 20 / Dic / 2022
+ *  Version 1.0.1 - 20 / Dic / 2021
  *  Recompiled with ZenAddInStdLib updated
+ *  
+ *  
+ *  Version 1.1.0 - 31 / 01 / 2022
+ *  Added text config file management.
+ *  Management of template BO
+
+ *  Version 1.1.1 - 02 / 03 / 2022
+ *  Fixed bug: naming of trigger variable in BO style.
+ *  
  *  
  */
 
@@ -19,6 +28,7 @@ using System.Threading.Tasks;
 using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Linq;
 using ZenonAddInStdLib;
 
 namespace CrashRecAddIn
@@ -33,7 +43,7 @@ namespace CrashRecAddIn
         #region IProjectServiceExtension implementation
         IProject _Zenon;
         
-        public const string AddInVersion = "1.0.1";
+        public const string AddInVersion = "1.1.1";
         public const string cLogFile = "CrashRecAddIn_LOG.txt";
 
         public bool _CycleMonitorEnable = true;
@@ -56,18 +66,23 @@ namespace CrashRecAddIn
         private string _pathBaslerCommander = @"C:\Romaco\Prog\Program\BaslerCommander\BaslerCommander.exe";
         private string AlarmCodeTriggerVar = "bINT_CrashRecorder_AlarmTriggerCode";
 
+        private int _alarmFirstVarNo = 16001;
+        private int _alarmLastVarNo = 16480;
+        private string _alarmNaming = "KABO";
+        private string _BOStyleAddress = "[0096]";
+
         public void Start(IProject context, IBehavior behavior)
         {
             // enter your code which should be executed when starting the service for the SCADA Service Engine
             try 
             {
                 _Zenon = context;
-                _pathConfigFile = Path.Combine(_Zenon.GetFolderPath(FolderPath.Others), "");
-
+                
                 Logger.AddLog("Start Crash Recorder AddIn", ProjectServiceExtension.cLogFile);
                 try 
                 {
                     InitAlarmTriggerVarContainer();
+                    CheckConfiguration();
                     InitTriggerContainer();
                     RunControlCycle();
                 }
@@ -87,8 +102,43 @@ namespace CrashRecAddIn
             // enter your code which should be executed when stopping the service for the SCADA Service Engine
         }
 
-        private void InitAlarmTriggerVarContainer()
+        private void CheckConfiguration()
         {
+            try
+            {
+                Logger.AddLog("Checking configuration", ProjectServiceExtension.cLogFile);
+                string pathConfigFile = Path.Combine(_Zenon.GetFolderPath(FolderPath.Others), _pathConfigFile);
+
+                if (File.Exists(pathConfigFile))
+                {
+                    Logger.AddLog($"{pathConfigFile} is present", ProjectServiceExtension.cLogFile);
+                    Logger.AddLog($"Looking for setting: AlarmFirstVar", ProjectServiceExtension.cLogFile);
+                    string line = File.ReadLines(pathConfigFile).FirstOrDefault(s => s.StartsWith("AlarmFirstVar|"));
+                    string alarmFirstVar = line.Split(new char[] { '|' })[1];
+                    _alarmFirstVarNo = Convert.ToInt32(alarmFirstVar);
+
+                    Logger.AddLog($"Looking for setting: AlarmLastVar", ProjectServiceExtension.cLogFile);
+                    line = File.ReadLines(pathConfigFile).FirstOrDefault(s => s.StartsWith("AlarmLastVar|"));
+                    string alarmLastVar = line.Split(new char[] { '|' })[1];
+                    _alarmLastVarNo = Convert.ToInt32(alarmLastVar);
+
+                    Logger.AddLog($"Looking for setting: AlarmNaming", ProjectServiceExtension.cLogFile);
+                    line = File.ReadLines(pathConfigFile).FirstOrDefault(s => s.StartsWith("AlarmNaming|"));
+                    _alarmNaming = line.Split(new char[] { '|' })[1];
+
+                    Logger.AddLog($"Looking for setting: BOStyleAddress", ProjectServiceExtension.cLogFile);
+                    line = File.ReadLines(pathConfigFile).FirstOrDefault(s => s.StartsWith("Address|"));
+                    _BOStyleAddress = line.Split(new char[] { '|' })[1];
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.AddLogError(MethodInfo.GetCurrentMethod().ToString(), ex.ToString(), ProjectServiceExtension.cLogFile);
+            }
+        }
+
+        private void InitAlarmTriggerVarContainer()
+         {
             try 
             {
                 Logger.AddLog("Init Alarm Trigger Var Container", ProjectServiceExtension.cLogFile);
@@ -125,9 +175,20 @@ namespace CrashRecAddIn
 
                                 //alarmContainer.Dispose();
                                 //alarmContainer = new OcTriggerContainer(_Zenon, alarmContainerName, actualTrigger);
-                                string triggerVar = $"xInt_Exceptions{actualTrigger}";
+
+                                string triggerVar = "";
+                                if (_alarmNaming == "KABO")
+                                {
+                                    triggerVar = $"xInt_Exceptions{actualTrigger}";
+                                }
+                                else
+                                {
+                                    //BO
+                                    triggerVar = $"{_BOStyleAddress}.Application.P_HmiError.P_HmiMsg[{actualTrigger}]";
+                                } 
                                 Logger.AddLog($"TriggerVar: {triggerVar}", ProjectServiceExtension.cLogFile);
                                 ocTriggerContainer.TriggerVar = triggerVar;
+
                             }
                         }
                         catch (Exception ex) 
@@ -149,12 +210,24 @@ namespace CrashRecAddIn
             {
                 Logger.AddLog("Init trigger container", ProjectServiceExtension.cLogFile);
                 List<string> alarms = new List<string>();
-                for (int i = 16001; i < 16480; i++)
+                string alarm = "";
+                if (_alarmNaming == "KABO")
                 {
-                    alarms.Add($"xInt_Exceptions{i.ToString()}");
+                    for (int i = _alarmFirstVarNo; i < _alarmLastVarNo; i++)
+                    {
+                        alarms.Add($"xInt_Exceptions{i.ToString()}");
+                    }
+                    //xInt_Exceptions16000 - xInt_Exceptions16480
+                    alarm = $"xInt_Exceptions00000"; //fake var name just to create the container
                 }
-                //xInt_Exceptions16000 - xInt_Exceptions16480
-                string alarm = $"xInt_Exceptions00000"; //fake var name just to create the container
+                else // "BO"
+                {
+                    for (int i = _alarmFirstVarNo; i < _alarmLastVarNo; i++)
+                    {
+                        alarms.Add($"{_BOStyleAddress}.Application.P_HmiError.P_HmiMsg[{i.ToString()}]");
+                    }
+                    //xInt_Exceptions16000 - xInt_Exceptions16480
+                }
 
                 ocTriggerContainer = new OcTriggerContainer(_Zenon, alarmContainerName, alarm);
                 ocTriggerContainer.VarList = alarms;
