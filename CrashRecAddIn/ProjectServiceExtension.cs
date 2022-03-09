@@ -19,6 +19,9 @@
  *  Fixed bug: naming of trigger variable in BO style.
  *  
  *  
+ *  Version 1.2.0 - 08 / 03 / 2022
+ *  Added MultiTRIGGER - TO TEST!
+ *  
  */
 
 using Scada.AddIn.Contracts;
@@ -59,18 +62,23 @@ namespace CrashRecAddIn
 
         private int _filterTriggerMilliSeconds = 1000;
 
-        OcTriggerContainer ocTriggerContainer;
+        OcMultiTriggerContainer ocMultiTriggerContainer;
         private string alarmContainerName = "AlarmContainer";
 
         private string _pathConfigFile = "CrashRecConfig.txt";
         private string _pathBaslerCommander = @"C:\Romaco\Prog\Program\BaslerCommander\BaslerCommander.exe";
         private string AlarmCodeTriggerVar = "bINT_CrashRecorder_AlarmTriggerCode";
+        private string AlarmCodeTriggerVar1 = "bINT_CrashRecorder_AlarmTriggerCode1";
+        private string AlarmCodeTriggerVar2 = "bINT_CrashRecorder_AlarmTriggerCode2";
+        private string AlarmCodeTriggerVar3 = "bINT_CrashRecorder_AlarmTriggerCode3";
+        private string AlarmCodeTriggerVar4 = "bINT_CrashRecorder_AlarmTriggerCode4";
 
         private int _alarmFirstVarNo = 16001;
         private int _alarmLastVarNo = 16480;
         private string _alarmNaming = "KABO";
         private string _BOStyleAddress = "[0096]";
 
+        private List<string> _tokens;
         public void Start(IProject context, IBehavior behavior)
         {
             // enter your code which should be executed when starting the service for the SCADA Service Engine
@@ -144,6 +152,10 @@ namespace CrashRecAddIn
                 Logger.AddLog("Init Alarm Trigger Var Container", ProjectServiceExtension.cLogFile);
                 List<string> vars = new List<string>();
                 vars.Add(AlarmCodeTriggerVar);
+                vars.Add(AlarmCodeTriggerVar1);
+                vars.Add(AlarmCodeTriggerVar2);
+                vars.Add(AlarmCodeTriggerVar3);
+                vars.Add(AlarmCodeTriggerVar4);
                 alarmTriggerVarContainer = new OcValueContainer(_Zenon, alarmTriggerVarContainerName, vars);
                 alarmTriggerVarContainer.CreateContainer();
             }
@@ -165,30 +177,81 @@ namespace CrashRecAddIn
                         {
                             int triggerVarValue;
                             alarmTriggerVarContainer.GetValue(AlarmCodeTriggerVar, out triggerVarValue);
+                            int triggerVarValue1;
+                            alarmTriggerVarContainer.GetValue(AlarmCodeTriggerVar1, out triggerVarValue1);
+                            int triggerVarValue2;
+                            alarmTriggerVarContainer.GetValue(AlarmCodeTriggerVar2, out triggerVarValue2);
+                            int triggerVarValue3;
+                            alarmTriggerVarContainer.GetValue(AlarmCodeTriggerVar3, out triggerVarValue3);
+                            int triggerVarValue4;
+                            alarmTriggerVarContainer.GetValue(AlarmCodeTriggerVar4, out triggerVarValue4);
 
-                            //string token = triggerVarValue.ToString("00000");
-                            string token = triggerVarValue.ToString();
-                            if (actualTrigger != token)
+                            //string token = triggerVarValue.ToString();
+                            List<string> tokens = new List<string>();
+                            tokens.Add(triggerVarValue.ToString());
+                            tokens.Add(triggerVarValue1.ToString());
+                            tokens.Add(triggerVarValue2.ToString());
+                            tokens.Add(triggerVarValue3.ToString());
+                            tokens.Add(triggerVarValue4.ToString());
+
+                            bool rebuild = false;
+                            foreach (string t in tokens)
                             {
-                                actualTrigger = token;
-                                Logger.AddLog($"New alarm trigger: {actualTrigger}", ProjectServiceExtension.cLogFile);
-
-                                //alarmContainer.Dispose();
-                                //alarmContainer = new OcTriggerContainer(_Zenon, alarmContainerName, actualTrigger);
-
-                                string triggerVar = "";
-                                if (_alarmNaming == "KABO")
+                                if (!_tokens.Contains(t))
                                 {
-                                    triggerVar = $"xInt_Exceptions{actualTrigger}";
+                                    //Logger.AddLog("Rebuild triggers", ProjectServiceExtension.cLogFile);
+                                    rebuild = true;
+                                    break;
                                 }
-                                else
-                                {
-                                    //BO
-                                    triggerVar = $"{_BOStyleAddress}.Application.P_HmiError.P_HmiMsg[{actualTrigger}]";
-                                } 
-                                Logger.AddLog($"TriggerVar: {triggerVar}", ProjectServiceExtension.cLogFile);
-                                ocTriggerContainer.TriggerVar = triggerVar;
+                            }
 
+                            if (rebuild)
+                            {
+                                _tokens.Clear();
+                                Logger.AddLog("TOKENS CLEAR", ProjectServiceExtension.cLogFile);
+                                //string token = triggerVarValue.ToString("00000");
+                                List<FuncVarBond> triggers = new List<FuncVarBond>();
+
+                                foreach (string actualTrigger in tokens)
+                                {
+                                    Logger.AddLog($"New alarm trigger: {actualTrigger}", ProjectServiceExtension.cLogFile);
+
+                                    //alarmContainer.Dispose();
+                                    //alarmContainer = new OcTriggerContainer(_Zenon, alarmContainerName, actualTrigger);
+
+                                    string triggerVar = "";
+                                    if (_alarmNaming == "KABO")
+                                    {
+                                        triggerVar = $"xInt_Exceptions{actualTrigger}";
+                                    }
+                                    else
+                                    {
+                                        //BO
+                                        triggerVar = $"{_BOStyleAddress}.Application.P_HmiError.P_HmiMsg[{actualTrigger}]";
+                                    } 
+                                    Logger.AddLog($"TriggerVar: {triggerVar}", ProjectServiceExtension.cLogFile);
+                                    //ocMultiTriggerContainer.TriggerVar = triggerVar;
+
+                                    _tokens.Add(actualTrigger);
+                                    Logger.AddLog($"TOKENS ADD {triggerVar}", ProjectServiceExtension.cLogFile);
+                                    FuncVarBond fvb = new FuncVarBond(triggerVar, () =>
+                                    {
+                                        Logger.AddLog("Alarm trigger received", ProjectServiceExtension.cLogFile);
+                                        if (_CrashRecordinEnable)
+                                        {
+                                            string triggerFilePath = Path.Combine(folderRepos, triggerFile);
+                                            if (!File.Exists(triggerFilePath))
+                                            {
+                                                File.Create(triggerFilePath);
+                                                Logger.AddLog("TRIGGERED!", ProjectServiceExtension.cLogFile);
+                                            }
+                                            else
+                                                Logger.AddLog("trigger File already present", ProjectServiceExtension.cLogFile);
+                                        }
+                                    });
+                                    triggers.Add(fvb);
+                                }
+                                ocMultiTriggerContainer.Triggers = triggers;
                             }
                         }
                         catch (Exception ex) 
@@ -210,7 +273,7 @@ namespace CrashRecAddIn
             {
                 Logger.AddLog("Init trigger container", ProjectServiceExtension.cLogFile);
                 List<string> alarms = new List<string>();
-                string alarm = "";
+                _tokens = new List<string>();
                 if (_alarmNaming == "KABO")
                 {
                     for (int i = _alarmFirstVarNo; i < _alarmLastVarNo; i++)
@@ -218,7 +281,7 @@ namespace CrashRecAddIn
                         alarms.Add($"xInt_Exceptions{i.ToString()}");
                     }
                     //xInt_Exceptions16000 - xInt_Exceptions16480
-                    alarm = $"xInt_Exceptions00000"; //fake var name just to create the container
+                    //alarm = $"xInt_Exceptions00000"; //fake var name just to create the container
                 }
                 else // "BO"
                 {
@@ -229,25 +292,9 @@ namespace CrashRecAddIn
                     //xInt_Exceptions16000 - xInt_Exceptions16480
                 }
 
-                ocTriggerContainer = new OcTriggerContainer(_Zenon, alarmContainerName, alarm);
-                ocTriggerContainer.VarList = alarms;
-                ocTriggerContainer.TriggerFunc = (() => 
-                {
-                    Logger.AddLog("Alarm trigger received", ProjectServiceExtension.cLogFile);
-                    if (_CrashRecordinEnable)
-                    {
-                        string triggerFilePath = Path.Combine(folderRepos, triggerFile);
-                        if (!File.Exists(triggerFilePath))
-                        { 
-                            File.Create(triggerFilePath);
-                            Logger.AddLog("TRIGGERED!", ProjectServiceExtension.cLogFile);
-                        }
-                        else
-                            Logger.AddLog("trigger File already present", ProjectServiceExtension.cLogFile);
-                    }
-                });
-                ocTriggerContainer.TriggerManagement = TriggerManagementEnum.LEAVE;
-                ocTriggerContainer.CreateContainer();
+                ocMultiTriggerContainer = new OcMultiTriggerContainer(_Zenon, alarmContainerName, new List<FuncVarBond>());
+                ocMultiTriggerContainer.VarList = alarms;
+                ocMultiTriggerContainer.CreateContainer();
             }
             catch (Exception ex)
             {
