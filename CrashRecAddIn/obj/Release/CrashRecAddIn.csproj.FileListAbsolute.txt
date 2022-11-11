@@ -8,3 +8,4 @@ C:\Users\PaolinG\source\repos\CrashRecAddIn\CrashRecAddIn\bin\Release\ZenonAddIn
 C:\Users\PaolinG\source\repos\CrashRecAddIn\CrashRecAddIn\obj\Release\CrashRecAddIn.csproj.CoreCompileInputs.cache
 C:\Users\PaolinG\source\repos\CrashRecAddIn\CrashRecAddIn\obj\Release\CrashRecAddIn.csproj.CopyComplete
 C:\Users\PaolinG\source\repos\CrashRecAddIn\CrashRecAddIn\obj\Release\CrashRecAddIn.dll
+C:\Users\PaolinG\source\repos\CrashRecAddIn\CrashRecAddIn\obj\Release\CrashRecAddIn.csproj.AssemblyReference.cache
